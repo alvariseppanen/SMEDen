@@ -41,5 +41,3 @@ python3 snow_visualize.py -d root/toy_snowyKITTI/dataset/ -c root/networks/train
 ```
 
 Thanks to [SalsaNext](https://github.com/TiagoCortinhal/SalsaNext) for providing some of the code! 
-# SMEDNet
-# SMEDNet
