@@ -1,6 +1,6 @@
 ## Multi-Echo Denoising in Adverse Weather
 
-![](https://github.com/alvariseppanen/4DenoiseNet/blob/main/self_demo.gif)
+![](https://github.com/alvariseppanen/SMEDNet/blob/main/self_demo.gif)
 
 
 ### Citation:
