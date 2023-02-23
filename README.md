@@ -42,4 +42,8 @@ python3 snow_visualize.py -d root/toy_snowyKITTI/dataset/ -c root/networks/train
 (-s = sequence)
 ```
 
+<<<<<<< HEAD
 Thanks to [SalsaNext](https://github.com/TiagoCortinhal/SalsaNext) for providing some of the code! 
+=======
+Thanks to [SalsaNext](https://github.com/TiagoCortinhal/SalsaNext) for providing some of the code! 
+>>>>>>> b0c77001e3c0bd26d53c89ff9304e510c790af17

@@ -1,6 +1,3 @@
-################################################################################
-# training parameters
-################################################################################
 train:
   max_epochs: 40
   lr: 0.01               # sgd learning rate
@@ -20,10 +17,6 @@ train:
   show_scans: False      # show scans during training
   workers: 4             # number of threads to get data
 
-################################################################################
-# classification head parameters
-################################################################################
-# dataset (to find parser)
 dataset:
   labels: "kitti"
   scans: "kitti"
