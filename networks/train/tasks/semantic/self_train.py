@@ -15,8 +15,6 @@ from tasks.semantic.modules.SCorrelationL import *
 import math
 from decimal import Decimal
 
-#torch.manual_seed(0)
-
 def remove_exponent(d):
     return d.quantize(Decimal(1)) if d == d.to_integral() else d.normalize()
 

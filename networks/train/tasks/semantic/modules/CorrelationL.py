@@ -12,20 +12,20 @@ from torch.nn import init
 import math
 import time
 
-class KNNConvBlock(nn.Module):
+class MultiEchoNeighborBlock(nn.Module):
 
-    def __init__(self, in_chans=3, stem_size=32, N_echoes=3):
-        super(KNNConvBlock, self).__init__()
-        self.N_echoes = N_echoes
+    def __init__(self, in_chans=3, stem_size=32, n_echoes=2):
+        super(MultiEchoNeighborBlock, self).__init__()
+        self.n_echoes = n_echoes
         kernel_knn_size = 3 # 3
         self.search = 7 # 5
-        self.range_weight = Parameter(torch.Tensor(in_chans, stem_size, kernel_knn_size*kernel_knn_size*N_echoes+N_echoes))
+        self.range_weight = Parameter(torch.Tensor(in_chans, stem_size, kernel_knn_size*kernel_knn_size*n_echoes+n_echoes))
         init.kaiming_uniform_(self.range_weight, a = math.sqrt(5))
         self.out_channels = stem_size
         self.knn_nr = kernel_knn_size ** 2
         self.act1 = nn.LeakyReLU(inplace=True)
 
-    def KNN_conv(self, inputs):
+    def Neighbor_conv(self, inputs):
         B, H, W = inputs.shape[0], inputs.shape[-2], inputs.shape[-1]
         search_dim = self.search ** 2
         pad = int((self.search - 1) / 2)
@@ -41,26 +41,26 @@ class KNNConvBlock(nn.Module):
                             kernel_size=(self.search, self.search),
                             padding=(pad, pad))
 
-        n_xyz = torch.cat((first_unfold_points[:, search_dim*0:search_dim*1, ...].unsqueeze(dim=1), 
-                           first_unfold_points[:, search_dim*1:search_dim*2, ...].unsqueeze(dim=1), 
-                           first_unfold_points[:, search_dim*2:search_dim*3, ...].unsqueeze(dim=1)), dim=1)
+        first_unfold_points = first_unfold_points.view(B, 3, search_dim, H*W)
 
-        for echo in range(self.N_echoes):
+        unfold_range = torch.zeros((B, 0, H*W)).cuda()
+        
+        for echo in range(self.n_echoes):
             n_range = (inputs[:, echo:echo+1, ...].clone())
-            n_points = (inputs[:, self.N_echoes+echo*3:self.N_echoes+echo*3+3, ...].clone())
-            n_c_xyz = n_points.flatten(start_dim=2).unsqueeze(dim=2)
-            n_distance = torch.linalg.norm(n_c_xyz - n_xyz, dim=1)
-            n_knn_values, n_knn_index = n_distance.topk(self.knn_nr, dim=1, largest=False)
+            n_points = (inputs[:, self.n_echoes+echo*3:self.n_echoes+echo*3+3, ...].clone())
+
+            n_points = n_points.flatten(start_dim=2).unsqueeze(dim=2)
+            n_distance = torch.linalg.norm(n_points - first_unfold_points, dim=1)
+            _, n_knn_index = n_distance.topk(self.knn_nr, dim=1, largest=False)
             n_unfold_range = torch.gather(input=first_unfold_range, dim=1, index=n_knn_index)
-            n_range_self = torch.clamp(n_range.flatten(start_dim=2), min=1, max=torch.max(n_range))
-            unfold_range = torch.cat((unfold_range, n_unfold_range, n_range_self), dim=1)
+            unfold_range = torch.cat((unfold_range, n_unfold_range, n_range.flatten(start_dim=2)), dim=1)
 
         output = torch.matmul(self.range_weight, unfold_range).view(B, self.out_channels, H, W)
 
         return output
 
     def forward(self, x):
-        x = self.KNN_conv(x)
+        x = self.Neighbor_conv(x)
         x = self.act1(x)
 
         return x
@@ -194,22 +194,21 @@ class UpBlock(nn.Module):
 
         return upE
 
-class Student(nn.Module):
-    def __init__(self, nclasses, params, N_echoes=3):
-        super(Student, self).__init__()
+class CorrL(nn.Module):
+    def __init__(self, nclasses, params, n_echoes=2):
+        super(CorrL, self).__init__()
         
-        self.KNNBlock = KNNConvBlock(1, 2 * 32, N_echoes)
+        self.MultiEchoNeighborBlock = MultiEchoNeighborBlock(1, 2 * 32, n_echoes)
         self.resBlock1 = ResBlock(2 * 32, 2 * 32, 0.2, pooling=True, drop_out=False)
-        self.resBlock_pre = ResBlock(32, 2 * 32, 0.2, pooling=True, drop_out=False)
-        self.resBlock7 = ResBlock(2 * 32, 2 * 2 * 32, 0.2, pooling=False)
-        self.upBlock6 = UpBlock(2 * 2 * 32, 32, 0.2, drop_out=False)
-        self.logits = nn.Conv2d(32, N_echoes, kernel_size=(1, 1))
+        self.resBlock2 = ResBlock(2 * 32, 2 * 2 * 32, 0.2, pooling=False)
+        self.upBlock = UpBlock(2 * 2 * 32, 32, 0.2, drop_out=False)
+        self.logits = nn.Conv2d(32, n_echoes, kernel_size=(1, 1))
 
     def forward(self, x):
-        KNNBlock = self.KNNBlock(x)
-        down, down_skip = self.resBlock1(KNNBlock)
-        bottom = self.resBlock7(down)
-        up = self.upBlock6(bottom, down_skip)
+        MultiEchoNeighborBlock = self.MultiEchoNeighborBlock(x)
+        down, down_skip = self.resBlock1(MultiEchoNeighborBlock)
+        bottom = self.resBlock2(down)
+        up = self.upBlock(bottom, down_skip)
         logits = self.logits(up)
 
         return logits

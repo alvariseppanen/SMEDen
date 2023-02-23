@@ -1,6 +1,6 @@
 ## Multi-Echo Denoising in Adverse Weather
 
-![](https://github.com/alvariseppanen/4DenoiseNet/blob/main/self_demo.gif)
+![](https://github.com/alvariseppanen/SMEDNet/blob/main/self_demo.gif)
 
 
 ### Citation:
@@ -17,12 +17,14 @@ coming soon
 ```
 cd networks
 ./self_train.sh -d root/snowyKITTI/dataset/ -a smednet.yml -l /your/log/folder/ -c 0
+./multi_self_train.sh -d root/newSTF/dataset/ -a smednet.yml -l /your/log/folder/ -c 0 
 ```
 
-### Infer (pretrained model -m root/logs/2023-2-21-15:49/):
+### Infer (pretrained singe-echo model -m root/logs/2023-2-21-15:49/, multi-echo model -m root/logs/2023-2-23-09:43/):
 ```
 cd networks/train/tasks/semantic
 python3 self_infer.py -d root/toy_snowyKITTI/dataset/ -m root/logs/2023-2-21-15:49/ -l /your/predictions/folder/ -s test
+python3 multi_self_infer.py -d root/toy_newSTF/dataset/ -m root/logs/2023-2-23-09:43/ -l /your/predictions/folder/ -s test
 (-s = split)
 ```
 
@@ -41,5 +43,3 @@ python3 snow_visualize.py -d root/toy_snowyKITTI/dataset/ -c root/networks/train
 ```
 
 Thanks to [SalsaNext](https://github.com/TiagoCortinhal/SalsaNext) for providing some of the code! 
-# SMEDNet
-# SMEDNet

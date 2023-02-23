@@ -1,10 +1,7 @@
-################################################################################
-# training parameters
-################################################################################
 train:
   max_epochs: 40
   lr: 0.01               # sgd learning rate
-  tlr: 0.01               # sgd learning rate
+  tlr: 0.01              # sgd learning rate
   wup_epochs: 1          # warmup during first XX epochs (can be float)
   momentum: 0.9          # sgd momentum
   lr_decay: 0.99         # learning rate decay per epoch after initial cycle (from min lr)
@@ -20,10 +17,6 @@ train:
   show_scans: False      # show scans during training
   workers: 4             # number of threads to get data
 
-################################################################################
-# classification head parameters
-################################################################################
-# dataset (to find parser)
 dataset:
   labels: "kitti"
   scans: "kitti"
@@ -33,6 +26,7 @@ dataset:
     type: "spherical" # projective
     fov_up: 3
     fov_down: -25
+    n_echoes: 3
     img_prop:
       width: 2048
       height: 64
