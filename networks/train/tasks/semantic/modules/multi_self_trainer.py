@@ -293,7 +293,7 @@ class Trainer():
                      'scheduler': self.scheduler.state_dict(),
                      'scheduler2': self.scheduler2.state_dict()
                      }
-            save_checkpoint(state, self.log, suffix="")
+            save_checkpoint(state, self.log, suffix=""+str(epoch))
 
             if self.info['train_iou'] > self.info['best_train_iou']:
                 print("Best mean iou in training set so far, save model!")
@@ -308,7 +308,7 @@ class Trainer():
                          }
                 save_checkpoint(state, self.log, suffix="_train_best")
 
-            if epoch % self.ARCH["train"]["report_epoch"] == np.pi: #0
+            if epoch % self.ARCH["train"]["report_epoch"] and self.n_echoes == 1:
                 # evaluate on validation set
                 print("*" * 80)
                 acc, iou, loss, rand_img,hetero_l = self.validate(val_loader=self.parser.get_valid_set(),
@@ -381,53 +381,44 @@ class Trainer():
             if not self.multi_gpu and self.gpu:
                 in_vol = in_vol.cuda()
 
-            B, H, W = in_vol.shape[0], in_vol.shape[-2], in_vol.shape[-1]
+            B, C, H, W = in_vol.shape[0], int(in_vol.shape[1]/self.n_echoes), in_vol.shape[-2], in_vol.shape[-1]
             
-            valid_mask = (in_vol[:, 0:3, ...] > 0).int()
+            valid_mask = (in_vol[:, 0:self.n_echoes, ...] > 0).int()
             binary_mask = torch.bernoulli(torch.full((B, 1, H, W), 0.5)).bool() # 1 for trainable pixels
             if self.gpu: binary_mask = binary_mask.cuda()
 
-            proj_range = torch.clamp(in_vol[:, 0:3, ...].detach(), min=1.0, max=80.0)
+            proj_range = torch.clamp(in_vol[:, 0:self.n_echoes, ...].detach(), min=1.0, max=80.0)
 
-            intensity = (in_vol[:, 12:15, ...].detach()) * proj_range**2 # normalized with inverse square law
+            intensity = (in_vol[:, (C-1)*self.n_echoes:(C-1)*self.n_echoes+self.n_echoes, ...].detach()) * proj_range**2 # normalized with inverse square law
 
             # run NNs
             p_difficulty = model(in_vol)
             p_range, knn_values = model2(in_vol, binary_mask)
             p_difficulty = p_difficulty * valid_mask
-            range_error = (p_range - in_vol[:, 0:3, ...]) * valid_mask
+            range_error = (p_range - in_vol[:, 0:self.n_echoes, ...]) * valid_mask
 
             knn_values, _ = torch.sort(knn_values, dim=2)
             closest_n = knn_values[:, :, 1:3, ...].detach()
             mean_dist = torch.mean(closest_n, dim=2)
             sparsity = mean_dist / proj_range
-            
-            ##################
-            first_si = torch.cat((sparsity[:, [0], ...], intensity[:, [0], ...]), dim=1)
-            first_si = first_si * valid_mask[:, [0], ...]
-            first_knn_p_difficulty, first_knn_di_dist = self.knn_search.KNNs(first_si, p_difficulty[:, [0], ...])
-            first_knn_regression_target = first_knn_p_difficulty.mean(dim=1) * valid_mask[:, [0], ...]
-            #first_knn_regression_var = first_knn_p_difficulty.std(dim=1) * valid_mask[:, [0], ...]
-            #first_knn_regression_var = torch.clamp(first_knn_regression_var, min=1, max=10)
-            
-            second_si = torch.cat((sparsity[:, [1], ...], intensity[:, [1], ...]), dim=1)
-            second_si = second_si * valid_mask[:, [1], ...]
-            second_knn_p_difficulty, second_knn_di_dist = self.knn_search.KNNs(second_si, p_difficulty[:, [1], ...])
-            second_knn_regression_target = second_knn_p_difficulty.mean(dim=1) * valid_mask[:, [1], ...]
-            
-            third_si = torch.cat((sparsity[:, [2], ...], intensity[:, [2], ...]), dim=1)
-            third_si = third_si * valid_mask[:, [2], ...]
-            third_knn_p_difficulty, third_knn_di_dist = self.knn_search.KNNs(third_si, p_difficulty[:, [2], ...])
-            third_knn_regression_target = third_knn_p_difficulty.mean(dim=1) * valid_mask[:, [2], ...]
-            
-            knn_regression_target = torch.cat((first_knn_regression_target, second_knn_regression_target, third_knn_regression_target), dim=1)
-            #################
+
+            regression_target = torch.zeros((B, 0, H, W)).cuda()
+            regression_var = torch.zeros((B, 0, H, W)).cuda()
+            for echo in range(self.n_echoes):
+                n_si = torch.cat((sparsity[:, [echo], ...], intensity[:, [echo], ...]), dim=1)
+                n_si = n_si * valid_mask[:, [echo], ...]
+                n_p_difficulty, n_si_dist = self.knn_search.KNNs(n_si, p_difficulty[:, [echo], ...])
+                n_regression_target = n_p_difficulty.mean(dim=1) * valid_mask[:, [echo], ...]
+                n_regression_var = n_p_difficulty.std(dim=1) * valid_mask[:, [echo], ...]
+                n_regression_var = torch.clamp(n_regression_var, min=1, max=2)
+                
+                regression_target = torch.cat((regression_target, n_regression_target), dim=1)
+                regression_var = torch.cat((regression_var, n_regression_var), dim=1)
 
             proj_range = torch.bucketize(proj_range, torch.arange(1,80,1).cuda()) + 1
 
-            loss_m = 1.0*((torch.abs(range_error)/(0.2*proj_range*torch.exp(p_difficulty))*binary_mask).sum())/torch.count_nonzero(valid_mask*binary_mask) + (torch.abs(knn_regression_target - p_difficulty)*binary_mask).sum()/torch.count_nonzero(valid_mask*binary_mask) + (p_difficulty*binary_mask).sum()/torch.count_nonzero(valid_mask*binary_mask)
-            #loss_m = ((torch.abs(range_error)/(0.2*proj_range*torch.exp(p_difficulty)) + torch.abs(knn_regression_target - p_difficulty)/knn_regression_var + p_difficulty)*binary_mask*valid_mask).sum()/torch.count_nonzero(binary_mask*valid_mask)
-
+            loss_m = ((torch.abs(range_error)/(0.2*proj_range*torch.exp(p_difficulty)) + torch.abs(regression_target - p_difficulty)/regression_var + p_difficulty)*binary_mask*valid_mask).sum()/torch.count_nonzero(binary_mask*valid_mask)
+            
             optimizer.zero_grad()
             optimizer2.zero_grad()
             if self.n_gpus > 1:
@@ -527,9 +518,6 @@ class Trainer():
         hetero_l = AverageMeter()
         rand_imgs = []
 
-        #torch.backends.cudnn.enabled = True    # added
-        #torch.backends.cudnn.bentchmark = True # added
-
         # switch to evaluate mode
         model.eval()
         evaluator.reset()
@@ -550,24 +538,12 @@ class Trainer():
 
                 # compute output
                 output = model(in_vol)
-                #log_out = torch.log(output.clamp(min=1e-8))
-                #jacc = self.ls(output, proj_labels)
-                #wce = criterion(log_out, proj_labels.long()) # RuntimeError: expected scalar type Long but found Int
-                #loss = wce + jacc
 
                 # measure accuracy and record loss
-                #argmax = output.argmax(dim=1)
                 valid_mask = (in_vol[:, [0], ...] != 0).int()
                 argmax = ((output > -0.15)*valid_mask).long() + 1
                 evaluator.addBatch(argmax, proj_labels)
-                #losses.update(loss.mean().item(), in_vol.size(0))
-                #jaccs.update(jacc.mean().item(),in_vol.size(0))
-
-
-                #wces.update(wce.mean().item(),in_vol.size(0))
-
-
-
+                
                 if save_scans:
                     # get the first scan in batch and project points
                     mask_np = proj_mask[0].cpu().numpy()

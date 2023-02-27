@@ -38,12 +38,11 @@ python3 snow_evaluate_iou.py -d root/toy_snowyKITTI/dataset/ -dc root/networks/t
 ### Visualize:
 ```
 cd utils
-python3 snow_visualize.py -d root/toy_snowyKITTI/dataset/ -c root/networks/train/tasks/semantic/config/labels/snowy-kitti.yaml -p /your/predictions/folder/ -s 22
+single-echo:
+python3 visualize.py -d root/toy_snowyKITTI/dataset/ -c root/networks/train/tasks/semantic/config/labels/snowy-kitti.yaml -p /your/predictions/folder/ -s 22
+multi-echo:
+python3 visualize.py -d root/toy_snowyKITTI/dataset/ -c root/networks/train/tasks/semantic/config/labels/stf.yaml -p /your/predictions/folder/ -s 4
 (-s = sequence)
 ```
 
-<<<<<<< HEAD
 Thanks to [SalsaNext](https://github.com/TiagoCortinhal/SalsaNext) for providing some of the code! 
-=======
-Thanks to [SalsaNext](https://github.com/TiagoCortinhal/SalsaNext) for providing some of the code! 
->>>>>>> b0c77001e3c0bd26d53c89ff9304e510c790af17

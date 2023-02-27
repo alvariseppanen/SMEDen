@@ -47,6 +47,12 @@ if __name__ == '__main__':
       'Defaults to %(default)s',
   )
   parser.add_argument(
+      '--Multi_echo', '-ME',
+      dest='Multi_echo',
+      default=True,
+      help='Multi-echo visualization. Defaults to %(default)s',
+  )
+  parser.add_argument(
       '--do_instances', '-di',
       dest='do_instances',
       default=False,
@@ -80,10 +86,14 @@ if __name__ == '__main__':
   print("Sequence", FLAGS.sequence)
   print("Predictions", FLAGS.predictions)
   print("ignore_semantics", FLAGS.ignore_semantics)
+  print("multi_echo", FLAGS.Multi_echo)
   print("do_instances", FLAGS.do_instances)
   print("ignore_safety", FLAGS.ignore_safety)
   print("offset", FLAGS.offset)
   print("*" * 80)
+
+  # todo: remove instance label visualization
+  use_multi_echo = True
 
   # open config file
   try:
@@ -136,11 +146,11 @@ if __name__ == '__main__':
 
   # create a scan
   if FLAGS.ignore_semantics:
-    scan = LaserScan(project=True)  # project all opened scans to spheric proj
+    scan = LaserScan(project=True, multi_echo=use_multi_echo)  # project all opened scans to spheric proj
   else:
     color_dict = CFG["color_map"]
     nclasses = len(color_dict)
-    scan = SemLaserScan(nclasses, color_dict, project=True)
+    scan = SemLaserScan(nclasses, color_dict, project=True, multi_echo=use_multi_echo)
 
   # create a visualizer
   semantics = not FLAGS.ignore_semantics
@@ -151,6 +161,7 @@ if __name__ == '__main__':
                      scan_names=scan_names,
                      label_names=label_names,
                      offset=FLAGS.offset,
+                     multi_echo=use_multi_echo,
                      semantics=semantics, instances=instances and semantics)
 
   # print instructions

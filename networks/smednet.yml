@@ -1,5 +1,5 @@
 train:
-  max_epochs: 40
+  max_epochs: 80         # 40
   lr: 0.01               # sgd learning rate
   tlr: 0.01              # sgd learning rate
   wup_epochs: 1          # warmup during first XX epochs (can be float)
@@ -26,7 +26,7 @@ dataset:
     type: "spherical" # projective
     fov_up: 3
     fov_down: -25
-    n_echoes: 3
+    n_echoes: 2
     img_prop:
       width: 2048
       height: 64

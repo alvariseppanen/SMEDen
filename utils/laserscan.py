@@ -6,12 +6,13 @@ class LaserScan:
   """Class that contains LaserScan with x,y,z,r"""
   EXTENSIONS_SCAN = ['.bin']
 
-  def __init__(self, project=False, H=64, W=1024, fov_up=3.0, fov_down=-25.0):
+  def __init__(self, project=False, H=64, W=1024, fov_up=3.0, fov_down=-25.0, multi_echo=True):
     self.project = project
     self.proj_H = H
     self.proj_W = W
     self.proj_fov_up = fov_up
     self.proj_fov_down = fov_down
+    self.multi_echo = multi_echo
     self.reset()
 
   def reset(self):
@@ -70,8 +71,15 @@ class LaserScan:
       raise RuntimeError("Filename extension is not valid scan file.")
 
     # if all goes well, open pointcloud
-    scan = np.fromfile(filename, dtype=np.float32)
-    scan = scan.reshape((-1, 4)) # was -1,4 #########################################################################################
+    if self.multi_echo:
+        fscan = np.fromfile(filename, dtype=np.float32)
+        fscan = fscan.reshape((-1, 4))
+        sscan = np.fromfile(filename.replace('snow_velodyne', 'last_velodyne'), dtype=np.float32)
+        sscan = sscan.reshape((-1, 4))
+        scan = np.concatenate((fscan, sscan), axis=0)
+    else:
+        scan = np.fromfile(filename, dtype=np.float32)
+        scan = scan.reshape((-1, 4))
 
     # put in attribute
     points = scan[:, 0:3]    # get xyz
@@ -170,10 +178,11 @@ class SemLaserScan(LaserScan):
   """Class that contains LaserScan with x,y,z,r,sem_label,sem_color_label,inst_label,inst_color_label"""
   EXTENSIONS_LABEL = ['.label']
 
-  def __init__(self, nclasses, sem_color_dict=None, project=False, H=64, W=1024, fov_up=3.0, fov_down=-25.0):
+  def __init__(self, nclasses, sem_color_dict=None, project=False, H=64, W=1024, fov_up=3.0, fov_down=-25.0, multi_echo=True):
     super(SemLaserScan, self).__init__(project, H, W, fov_up, fov_down)
     self.reset()
     self.nclasses = nclasses         # number of classes
+    self.multi_echo = multi_echo
 
     # make semantic colors
     max_sem_key = 0

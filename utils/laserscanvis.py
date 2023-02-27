@@ -12,21 +12,24 @@ from matplotlib import pyplot as plt
 from laserscan import LaserScan, SemLaserScan
 import imageio  # for animation
 
+save_animation = False
 
 class LaserScanVis:
   """Class that creates and handles a visualizer for a pointcloud"""
 
-  def __init__(self, scan, scan_names, label_names, offset=0,
+  def __init__(self, scan, scan_names, label_names, offset=0, multi_echo=True,
                semantics=True, instances=False):
     self.scan = scan
     self.scan_names = scan_names
     self.label_names = label_names
     self.offset = offset
+    self.multi_echo = multi_echo
     self.total = len(self.scan_names)
     self.semantics = semantics
     self.instances = instances
 
-    #self.writer = imageio.get_writer('~/Desktop/animation.gif')  # for animation
+    if save_animation:
+      self.writer = imageio.get_writer('~/Desktop/animation.gif')  # for animation
 
     # sanity check
     if not self.semantics and self.instances:
@@ -42,9 +45,10 @@ class LaserScanVis:
     # safety critical, so let's do things wrong)
     self.action = "no"  # no, next, back, quit are the possibilities
 
+    self.point_size = 8
     # new canvas prepared for visualizing data
-    self.canvas = SceneCanvas(keys='interactive', show=True)
-    # interface (n next, b back, q quit, very simple)
+    self.canvas = SceneCanvas(size=(1600, 800), keys='interactive', show=True)
+    # interface (n next, b back, q quit)
     self.canvas.events.key_press.connect(self.key_press)
     self.canvas.events.draw.connect(self.draw)
     # grid
@@ -75,7 +79,6 @@ class LaserScanVis:
       self.sem_view.camera.scale_factor = scale
       self.sem_view.add(self.sem_vis)
       visuals.XYZAxis(parent=self.sem_view.scene, width=3)
-      # self.sem_view.camera.link(self.scan_view.camera)
 
     if self.instances:
       print("Using instances in visualizer")
@@ -86,7 +89,6 @@ class LaserScanVis:
       self.inst_view.camera = 'turntable'
       self.inst_view.add(self.inst_vis)
       visuals.XYZAxis(parent=self.inst_view.scene)
-      # self.inst_view.camera.link(self.scan_view.camera)
 
     # img canvas size
     self.multiplier = 1
@@ -156,44 +158,44 @@ class LaserScanVis:
 
     # plot scan
     power = 16
-    # print()
-    #range_data = np.copy(self.scan.unproj_range)
-    range_data = np.clip(np.copy(self.scan.points[:,2]), -2, 5)
-    # print(range_data.max(), range_data.min())
-    #range_data = range_data**(1 / power)
-    # print(range_data.max(), range_data.min())
+    range_data = np.clip(np.copy(self.scan.points[:,2]), -2, 2)
     viridis_range = ((range_data - range_data.min()) /
                      (range_data.max() - range_data.min()) *
                      255).astype(np.uint8)
-    #viridis_range = (np.ones((range_data.shape)) * 127).astype(np.uint8)
     viridis_map = self.get_mpl_colormap("viridis")
     viridis_colors = viridis_map[viridis_range]
-    self.scan_vis.set_data(self.scan.points,
+
+    input_points = self.scan.points.copy()
+    
+    if self.multi_echo and self.semantics:
+      input_points[self.scan.sem_label > 1] = None
+
+    self.scan_vis.set_data(input_points,
                            face_color=viridis_colors[..., ::-1],
                            edge_color=viridis_colors[..., ::-1],
-                           size=5, edge_width=1.0)
-
-    # uniform color hack
-    '''color_map = np.ones((viridis_colors[..., ::-1].shape))
-    point_color = np.asarray([0, 200, 50])/255
-    color_map[:] = color_map[:]*point_color
-    self.scan_vis.set_data(self.scan.points,
-                           face_color=color_map,
-                           edge_color=color_map,
-                           size=5, edge_width=1.0)'''
+                           size=self.point_size, edge_width=1.0)
+    
     self.scan_vis.antialias = 0
 
     # plot semantics
     if self.semantics:
-      self.scan.points[self.scan.sem_label_color == 1.0] = None # a hack for removing snow points
-      '''self.sem_vis.set_data(self.scan.points,
-                            face_color=self.scan.sem_label_color[..., ::-1],
-                            edge_color=self.scan.sem_label_color[..., ::-1],
-                            size=5, edge_width=1.0)'''
-      self.sem_vis.set_data(self.scan.points,
+
+      if self.multi_echo:
+        valid_points = self.scan.points.copy()
+        valid_points[self.scan.sem_label != 0] = None # remove non-valid points
+        substitute_points = self.scan.points.copy()
+        substitute_points[self.scan.sem_label != 2] = None
+        self.sem_vis.set_data(np.vstack((substitute_points, valid_points)),
+                            face_color=np.vstack((self.scan.sem_label_color[..., ::-1], viridis_colors[..., ::-1])),
+                            edge_color=np.vstack((self.scan.sem_label_color[..., ::-1], viridis_colors[..., ::-1])),
+                            size=self.point_size, edge_width=1.0)
+      else:
+        self.scan.points[self.scan.sem_label_color == 1.0] = None # remove non-valid points
+        self.sem_vis.set_data(self.scan.points,
                             face_color=viridis_colors[..., ::-1],
                             edge_color=viridis_colors[..., ::-1],
-                            size=5, edge_width=1.0)
+                            size=self.point_size, edge_width=1.0)
+      
       self.sem_vis.antialias = 0
 
     # plot instances
@@ -206,18 +208,16 @@ class LaserScanVis:
     # now do all the range image stuff
     # plot range image
     data = np.copy(self.scan.proj_range)
-    # print(data[data > 0].max(), data[data > 0].min())
     data[data > 0] = data[data > 0]**(1 / power)
     data[data < 0] = data[data > 0].min()
-    # print(data.max(), data.min())
     data = (data - data[data > 0].min()) / \
         (data.max() - data[data > 0].min())
-    # print(data.max(), data.min())
     self.img_vis.set_data(data)
     self.img_vis.update()
 
-    #im = self.canvas.render(alpha=True)  # for animation
-    #self.writer.append_data(im)  # for animation
+    if save_animation:
+      im = self.canvas.render(alpha=True)  # for animation
+      self.writer.append_data(im)  # for animation
 
     if self.semantics:
       self.sem_img_vis.set_data(self.scan.proj_sem_color[..., ::-1])
@@ -242,7 +242,8 @@ class LaserScanVis:
         self.offset = self.total - 1
       self.update_scan()
     elif event.key == 'Q' or event.key == 'Escape':
-      #self.writer.close() # for animation
+      if save_animation:
+        self.writer.close() # for animation
       self.destroy()
 
   def draw(self, event):
