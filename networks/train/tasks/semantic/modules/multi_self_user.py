@@ -12,6 +12,7 @@ import __init__ as booger
 import os
 import numpy as np
 from tasks.semantic.modules.CorrelationL import *
+from tasks.semantic.modules.MEDROR import *
 
 class User():
   def __init__(self, ARCH, DATA, datadir, logdir, modeldir, split):
@@ -42,13 +43,17 @@ class User():
                                       workers=self.ARCH["train"]["workers"],
                                       gt=False, 
                                       shuffle_train=False)
+    
+    self.n_echoes = self.ARCH["dataset"]["sensor"]["n_echoes"]
 
     # concatenate the encoder and the head
     with torch.no_grad():
         torch.nn.Module.dump_patches = True
         
+        self.medror = medror(n_echoes=self.ARCH["dataset"]["sensor"]["n_echoes"])
+
         self.model = CorrL(self.parser.get_n_classes(), ARCH, n_echoes=self.ARCH["dataset"]["sensor"]["n_echoes"])
-        w_dict = torch.load(modeldir + "/SMEDNet",
+        w_dict = torch.load(modeldir + "/SMEDNet4",
                             map_location=lambda storage, loc: storage)
         self.model.load_state_dict(w_dict['state_dict'], strict=True)
 
@@ -62,6 +67,7 @@ class User():
       cudnn.fastest = True
       self.gpu = True
       self.model.cuda()
+      self.medror.cuda()
 
   def infer(self):
     cnn = []
@@ -102,12 +108,10 @@ class User():
 
     with torch.no_grad():
 
-      for i, (proj_in, proj_mask, _, _, path_seq, path_name, p_x, p_y, p_z, proj_range, unproj_range, _, _, _, npoints, stack_order) in enumerate(loader):
-        # first cut to rela size (batch size one allows it)
+      for i, (proj_in, proj_mask, _, _, path_seq, path_name, p_x, p_y, p_z, _, unproj_range, _, _, _, npoints, stack_order) in enumerate(loader):
         p_x = p_x[0, :npoints]
         p_y = p_y[0, :npoints]
         p_z = p_z[0, :npoints]
-        #proj_range = proj_range[0, :npoints]
         unproj_range = unproj_range[0, :npoints]
         path_seq = path_seq[0]
         path_name = path_name[0]
@@ -119,15 +123,18 @@ class User():
           p_z = p_z.cuda()
           stack_order = stack_order.cuda()
 
-        #compute output
-        valid_mask = (proj_in[:, 0:3, ...] > 0).int()
-        proj_range = torch.clamp(proj_in[:, :3, ...], 1.0, 80.0)
+        valid_mask = (proj_in[:, 0:self.n_echoes, ...] > 0).int()
+        proj_range = torch.clamp(proj_in[:, 0:self.n_echoes, ...], 1.0, 80.0)
         if self.gpu: proj_range = proj_range.cuda()
         
         #compute output
         end = time.time()
-        proj_output = self.model(proj_in)
-        proj_output = proj_output * valid_mask
+        use_medror = False
+        if use_medror:
+          proj_output = self.medror(proj_in)
+        else:
+          proj_output = self.model(proj_in)
+          proj_output = proj_output * valid_mask
         
         if torch.cuda.is_available():
             torch.cuda.synchronize()
@@ -157,8 +164,7 @@ class User():
 
         # is range different compared to strogest
         is_different = torch.zeros_like(proj_output)
-        is_different[1, ...][proj_range.squeeze()[0, ...] + 1 < proj_range.squeeze()[1, ...]] = 1
-        is_different[2, ...][proj_range.squeeze()[0, ...] + 1 < proj_range.squeeze()[2, ...]] = 1
+        is_different[proj_range.squeeze()[0, ...] + 1 < proj_range.squeeze()] = 1
         is_different = is_different.bool()
         
         # is 1 if strongest and under threshold
@@ -170,13 +176,11 @@ class User():
         # is 3 (substitute) if not strongest but better than strongest and has different coordinate than strongest
         proj_predictions[~is_strongest * under_threshold * is_best * is_different] = 3
 
-        # is 4 if not strongest and snow
+        # is 4 if discarded
         proj_predictions[~is_strongest * ~is_best] = 4
         proj_predictions[~is_strongest * ~under_threshold] = 4
         proj_predictions[~is_strongest * ~is_different] = 4
-        proj_predictions[proj_range.squeeze() < 2] = 4
         proj_predictions[proj_range.squeeze() is None] = 4
-        proj_predictions[2, ...] = 4
 
         # roi
         proj_predictions[is_strongest * proj_range.squeeze() > 30] = 1

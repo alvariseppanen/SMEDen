@@ -31,7 +31,7 @@ class MultiEchoNeighborBlock(nn.Module):
         pad = int((self.search - 1) / 2)
 
         first_range = (inputs[:, 0:1, ...].clone())
-        first_points = (inputs[:, 3:6, ...].clone())
+        first_points = (inputs[:, self.n_echoes:self.n_echoes+3, ...].clone())
         
         first_unfold_range = F.unfold(first_range,
                             kernel_size=(self.search, self.search),
