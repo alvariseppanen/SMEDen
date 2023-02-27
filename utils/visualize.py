@@ -47,9 +47,10 @@ if __name__ == '__main__':
       'Defaults to %(default)s',
   )
   parser.add_argument(
-      '--Multi_echo', '-ME',
-      dest='Multi_echo',
-      default=True,
+      '--Multi_Echo', '-me',
+      dest='Multi_Echo',
+      default=False,
+      action='store_true',
       help='Multi-echo visualization. Defaults to %(default)s',
   )
   parser.add_argument(
@@ -86,14 +87,14 @@ if __name__ == '__main__':
   print("Sequence", FLAGS.sequence)
   print("Predictions", FLAGS.predictions)
   print("ignore_semantics", FLAGS.ignore_semantics)
-  print("multi_echo", FLAGS.Multi_echo)
+  print("multi_echo", FLAGS.Multi_Echo)
   print("do_instances", FLAGS.do_instances)
   print("ignore_safety", FLAGS.ignore_safety)
   print("offset", FLAGS.offset)
   print("*" * 80)
 
   # todo: remove instance label visualization
-  use_multi_echo = True
+  use_multi_echo = FLAGS.Multi_Echo
 
   # open config file
   try:
