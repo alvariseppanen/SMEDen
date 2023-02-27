@@ -41,8 +41,8 @@ cd utils
 single-echo:
 python3 visualize.py -d root/toy_snowyKITTI/dataset/ -c root/networks/train/tasks/semantic/config/labels/snowy-kitti.yaml -p /your/predictions/folder/ -s 22
 multi-echo:
-python3 visualize.py -d root/toy_snowyKITTI/dataset/ -c root/networks/train/tasks/semantic/config/labels/stf.yaml -p /your/predictions/folder/ -s 4
-(-s = sequence)
+python3 visualize.py -d root/toy_snowyKITTI/dataset/ -c root/networks/train/tasks/semantic/config/labels/stf.yaml -p /your/predictions/folder/ -s 4 -me 
+(-me = multi-echo)
 ```
 
 Thanks to [SalsaNext](https://github.com/TiagoCortinhal/SalsaNext) for providing some of the code! 
