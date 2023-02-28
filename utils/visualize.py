@@ -94,6 +94,7 @@ if __name__ == '__main__':
   print("*" * 80)
 
   # todo: remove instance label visualization
+  
   use_multi_echo = FLAGS.Multi_Echo
 
   # open config file
