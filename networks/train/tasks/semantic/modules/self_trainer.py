@@ -408,12 +408,13 @@ class Trainer():
             knn_p_difficulty, knn_di_dist = self.knn_search.KNNs(di, p_difficulty)
             knn_regression_target = knn_p_difficulty.mean(dim=1) * valid_mask
             knn_regression_var = knn_p_difficulty.std(dim=1) * valid_mask
-            knn_regression_var = torch.clamp(knn_regression_var, min=1, max=2) # otherwise not stable
+            knn_regression_var = torch.clamp(knn_regression_var, min=1, max=2) 
 
             proj_range = torch.bucketize(proj_range, torch.arange(1,80,1).cuda()) + 1
             
-            loss_m = ((torch.abs(range_error)/(0.2*proj_range*torch.exp(p_difficulty)) + torch.abs(knn_regression_target - p_difficulty)/knn_regression_var + p_difficulty)*binary_mask*valid_mask).sum()/torch.count_nonzero(binary_mask*valid_mask)
-            
+            #loss_m = ((torch.abs(range_error)/(0.2*proj_range*torch.exp(p_difficulty)) + torch.abs(knn_regression_target - p_difficulty)/knn_regression_var + p_difficulty)*binary_mask*valid_mask).sum()/torch.count_nonzero(binary_mask*valid_mask)
+            loss_m = ((torch.abs(range_error)/(0.2*proj_range*torch.exp(p_difficulty)) + p_difficulty)*binary_mask*valid_mask).sum()/torch.count_nonzero(binary_mask*valid_mask)
+
             optimizer.zero_grad()
             optimizer2.zero_grad()
             if self.n_gpus > 1:
