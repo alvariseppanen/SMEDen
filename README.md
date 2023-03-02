@@ -1,12 +1,11 @@
 ## Multi-Echo Denoising in Adverse Weather
 
-![](https://github.com/alvariseppanen/SMEDNet/blob/main/self_demo.gif)
+### Environment: 
 
-
-### Citation:
-
-coming soon
-
+Python 3.8.10
+CUDA 11.6
+PyTorch 1.12.1+cu116
+Numpy 1.23.3
 
 ### Datasets:
 
@@ -44,5 +43,3 @@ multi-echo:
 python3 visualize.py -d root/toy_snowyKITTI/dataset/ -c root/networks/train/tasks/semantic/config/labels/stf.yaml -p /your/predictions/folder/ -s 4 -me 
 (-me = multi-echo)
 ```
-
-Thanks to [SalsaNext](https://github.com/TiagoCortinhal/SalsaNext) for providing some of the code! 
