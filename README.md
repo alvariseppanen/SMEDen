@@ -3,14 +3,24 @@
 ### Environment: 
 
 Python 3.8.10
+
 CUDA 11.6
+
 PyTorch 1.12.1+cu116
+
 Numpy 1.23.3
 
 ### Datasets:
 
-[Download SnowyKITTI](https://www.dropbox.com/s/o3r654cdzfl405d/snowyKITTI.zip?dl=0)
-[Download STF (only LiDAR)](https://www.dropbox.com/s/eiwejdktla4m9mb/newSTF.zip?dl=0)
+[Download SnowyKITTI](https://github.com/alvariseppanen/4DenoiseNet)
+
+[Download STF](https://github.com/princeton-computational-imaging/SeeingThroughFog)
+
+Collect corrupted point clouds from STF:
+
+```
+python3 stf_to_kitti.py -d root/STF_dataset/ -n root_for_new_dataset/newSTF/
+```
 
 ### Train:
 ```
