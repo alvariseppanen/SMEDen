@@ -2,24 +2,20 @@
 
 ### Environment: 
 
-Python 3.8.10
-
-CUDA 11.6
-
-PyTorch 1.12.1+cu116
-
-Numpy 1.23.3
+- Python 3.8.10
+- CUDA 11.6
+- PyTorch 1.12.1+cu116
+- Numpy 1.23.3
 
 ### Datasets:
 
-[Download SnowyKITTI](https://github.com/alvariseppanen/4DenoiseNet)
-
-[Download STF](https://github.com/princeton-computational-imaging/SeeingThroughFog)
+- [Download SnowyKITTI](https://github.com/alvariseppanen/4DenoiseNet)
+- [Download STF](https://github.com/princeton-computational-imaging/SeeingThroughFog)
 
 Collect corrupted point clouds from STF:
 
 ```
-python3 stf_to_kitti.py -d root/STF_dataset/ -n root_for_new_dataset/newSTF/
+python3 create_new_stf.py -d root/STF_dataset/ -n root_for_new_dataset/
 ```
 
 ### Train:
