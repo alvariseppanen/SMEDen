@@ -15,6 +15,7 @@
 Collect corrupted point clouds from STF:
 
 ```
+cd utils
 python3 create_new_stf.py -d root/STF_dataset/ -n root_for_new_dataset/
 ```
 
@@ -22,21 +23,21 @@ python3 create_new_stf.py -d root/STF_dataset/ -n root_for_new_dataset/
 ```
 cd networks
 ./self_train.sh -d root/snowyKITTI/dataset/ -a smednet.yml -l /your/log/folder/ -c 0
-./multi_self_train.sh -d root/newSTF/dataset/ -a smednet.yml -l /your/log/folder/ -c 0 
+./multi_self_train.sh -d root/new_STF/dataset/ -a smednet.yml -l /your/log/folder/ -c 0 
 ```
 
 ### Infer (pretrained singe-echo model -m root/logs/2023-2-21-15:49/, multi-echo model -m root/logs/2023-2-27-13:11/):
 ```
 cd networks/train/tasks/semantic
-python3 self_infer.py -d root/toy_snowyKITTI/dataset/ -m root/logs/2023-2-21-15:49/ -l /your/predictions/folder/ -s test
-python3 multi_self_infer.py -d root/toy_newSTF/dataset/ -m root/logs/2023-2-27-13:11/ -l /your/predictions/folder/ -s test
+python3 self_infer.py -d root/snowyKITTI/dataset/ -m root/logs/2023-2-21-15:49/ -l /your/predictions/folder/ -s test
+python3 multi_self_infer.py -d root/new_STF/dataset/ -m root/logs/2023-2-27-13:11/ -l /your/predictions/folder/ -s test
 (-s = split)
 ```
 
 ### Evaluate:
 ```
 cd networks/train/tasks/semantic
-python3 evaluate_iou.py -d root/toy_snowyKITTI/dataset/ -dc root/networks/train/tasks/semantic/config/labels/snowy-kitti.yaml -p /your/predictions/folder/ -s test
+python3 evaluate_iou.py -d root/snowyKITTI/dataset/ -dc root/networks/train/tasks/semantic/config/labels/snowy-kitti.yaml -p /your/predictions/folder/ -s test
 (-s = split)
 ```
 
@@ -44,8 +45,8 @@ python3 evaluate_iou.py -d root/toy_snowyKITTI/dataset/ -dc root/networks/train/
 ```
 cd utils
 single-echo:
-python3 visualize.py -d root/toy_snowyKITTI/dataset/ -c root/networks/train/tasks/semantic/config/labels/snowy-kitti.yaml -p /your/predictions/folder/ -s 22
+python3 visualize.py -d root/snowyKITTI/dataset/ -c root/networks/train/tasks/semantic/config/labels/snowy-kitti.yaml -p /your/predictions/folder/ -s 22
 multi-echo:
-python3 visualize.py -d root/toy_snowyKITTI/dataset/ -c root/networks/train/tasks/semantic/config/labels/stf.yaml -p /your/predictions/folder/ -s 4 -me 
+python3 visualize.py -d root/new_STF/dataset/ -c root/networks/train/tasks/semantic/config/labels/stf.yaml -p /your/predictions/folder/ -s 4 -me 
 (-me = multi-echo)
 ```
