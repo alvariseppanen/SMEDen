@@ -53,7 +53,7 @@ class User():
         self.medror = medror(n_echoes=self.ARCH["dataset"]["sensor"]["n_echoes"])
 
         self.model = CorrL(self.parser.get_n_classes(), ARCH, n_echoes=self.ARCH["dataset"]["sensor"]["n_echoes"])
-        w_dict = torch.load(modeldir + "/SMEDNet30",
+        w_dict = torch.load(modeldir + "/SMEDNet60",
                             map_location=lambda storage, loc: storage)
         self.model.load_state_dict(w_dict['state_dict'], strict=True)
 
