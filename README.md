@@ -1,5 +1,7 @@
 ## Multi-Echo Denoising in Adverse Weather
 
+![](https://github.com/alvariseppanen/SMEDNet/blob/main/self_demo.gif)
+
 ### Environment: 
 
 - Python 3.8.10
