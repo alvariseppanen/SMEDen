@@ -13,6 +13,7 @@
 
 - [Download SnowyKITTI](https://github.com/alvariseppanen/4DenoiseNet)
 - [Download STF](https://github.com/princeton-computational-imaging/SeeingThroughFog)
+- [Download STF subset with labels](https://www.dropbox.com/scl/fi/k8l34wn7trgz6tttecsnh/newSTF_with_labels.zip?rlkey=dgkcs5rrdist5th9rdb648e9b&dl=0)
 
 Collect corrupted point clouds from STF:
 
