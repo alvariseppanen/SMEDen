@@ -34,9 +34,9 @@ class medror(nn.Module):
             n_distance = torch.linalg.norm(n_points - first_unfold_points, dim=1)
             n_knn_values, n_knn_index = n_distance.topk(self.knn_nr, dim=1, largest=False)
 
-            n_knn_values[n_knn_values > n_range.flatten(start_dim=2) * 3 * 0.08] = 0
+            n_knn_values[n_knn_values > n_range.flatten(start_dim=2) * 3 * 0.008] = 0 # 0.08 0.03, 0.02 0.12, 0.01 0.24, 0.005 0.30
             n_knn_values = torch.count_nonzero(n_knn_values, dim=1).unsqueeze(dim=1)
-            n_prediction = (n_knn_values < 3).int() # 1 non-valid, 0 valid
+            n_prediction = (n_knn_values < 3).int() # 1 non-valid, 0 valid # 3
             # a hack for binary label
             n_prediction *= 2000
             n_prediction -= 1000

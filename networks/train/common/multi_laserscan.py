@@ -319,13 +319,13 @@ class SemLaserScan(LaserScan):
         self.proj_sem_label = np.zeros((self.proj_H, self.proj_W),
                                        dtype=np.int32)  # [H,W]  label
         self.proj_sem_color = np.zeros((self.proj_H, self.proj_W, 3),
-                                       dtype=np.float)  # [H,W,3] color
+                                       dtype=float)  # [H,W,3] color
 
         # projection color with instance labels
         self.proj_inst_label = np.zeros((self.proj_H, self.proj_W),
                                         dtype=np.int32)  # [H,W]  label
         self.proj_inst_color = np.zeros((self.proj_H, self.proj_W, 3),
-                                        dtype=np.float)  # [H,W,3] color
+                                        dtype=float)  # [H,W,3] color
 
     def open_label(self, filename):
         """ Open raw scan and fill in attributes
@@ -342,6 +342,7 @@ class SemLaserScan(LaserScan):
         # if all goes well, open label
         label = np.fromfile(filename, dtype=np.int32)
         label = label.reshape((-1))
+        #print(np.min(label), np.max(label))
 
         if self.drop_points is not False:
             label = np.delete(label,self.points_to_drop)

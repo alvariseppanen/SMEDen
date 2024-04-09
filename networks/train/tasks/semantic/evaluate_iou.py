@@ -10,7 +10,12 @@ import torch
 import __init__ as booger
 
 from tasks.semantic.modules.ioueval import iouEval
-from common.laserscan import SemLaserScan
+
+multi_echo = True
+if not multi_echo:
+    from common.laserscan import SemLaserScan
+else:
+    from common.multi_laserscan import SemLaserScan
 
 # possible splits
 splits = ['train','valid','test']
@@ -40,6 +45,7 @@ def eval(test_sequences,splits,pred):
         sequence = '{0:02d}'.format(int(sequence))
         label_paths = os.path.join(FLAGS.dataset, "sequences",
                                    str(sequence), "snow_labels")
+        print(label_paths)
         # populate the label names
         seq_label_names = [os.path.join(dp, f) for dp, dn, fn in os.walk(
             os.path.expanduser(label_paths)) for f in fn if ".label" in f]
@@ -61,8 +67,8 @@ def eval(test_sequences,splits,pred):
     # print(pred_names)
 
     # check that I have the same number of files
-    # print("labels: ", len(label_names))
-    # print("predictions: ", len(pred_names))
+    print("labels: ", len(label_names))
+    print("predictions: ", len(pred_names))
     assert (len(label_names) == len(scan_names) and
             len(label_names) == len(pred_names))
 
@@ -85,6 +91,17 @@ def eval(test_sequences,splits,pred):
         u_pred_sem = remap_lut[pred.sem_label]  # remap to xentropy format
         if FLAGS.limit is not None:
             u_pred_sem = u_pred_sem[:FLAGS.limit]
+
+        # define gt-substitutes based on the valid/invalid gt and prediction substitutes
+        gt_substitute_mask = (u_pred_sem == 3) * (u_label_sem == 1)
+        u_label_sem[gt_substitute_mask] = 3
+        gt_substitute_mask = (u_pred_sem == 5) * (u_label_sem == 1)
+        u_label_sem[gt_substitute_mask] = 3
+
+        # ignore close points
+        #close_point_mask = np.linalg.norm(pred.points[:, :3], axis=1) < 2.0
+        #u_label_sem[close_point_mask] = 0
+        
 
         # add single scan to evaluation
         evaluator.addBatch(u_pred_sem, u_label_sem)

@@ -5,6 +5,7 @@ labels:
   1: "noise"
   2: "substitute"
   3: "discarded"
+  4: "helper"
   9: "unlabelled"
 
 color_map: # bgr
@@ -12,13 +13,15 @@ color_map: # bgr
   1: [255, 0, 0] # noise
   2: [0, 0, 255] # substitute
   3: [255, 0, 0] # discarded
+  4: [0, 0, 0]   # helper
   9: [0, 0, 0]
 
 content: # as a ratio with the total number of points
-  0: 0.70
+  0: 0.60
   1: 0.10
   2: 0.10
   3: 0.10
+  4: 0.10
   9: 0.0
 
 # classes that are indistinguishable from single scan or inconsistent in
@@ -29,6 +32,7 @@ learning_map:
   1: 2     # noise
   2: 3     # substitute
   3: 4     # discarded
+  4: 5     # helper
 
 learning_map_inv: # inverse of previous map
   0: 9     # unlabeled
@@ -36,13 +40,15 @@ learning_map_inv: # inverse of previous map
   2: 1     # noise
   3: 2     # substitute
   4: 3     # discarded
+  5: 4     # helper
 
 learning_ignore: # Ignore classes
   0: True      # unlabeled
   1: False     # valid
   2: False     # noise
   3: False     # substitute
-  4: False     # discarded
+  4: True      # discarded
+  5: True      # helper
 
 split: # sequence numbers
   train:

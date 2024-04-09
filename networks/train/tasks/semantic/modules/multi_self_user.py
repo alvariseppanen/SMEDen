@@ -167,10 +167,10 @@ class User():
         is_different[proj_range.squeeze()[0, ...] + 1 < proj_range.squeeze()] = 1
         is_different = is_different.bool()
         
-        # is 1 if strongest and under threshold
+        # is 1 if strongest and under threshold, valid
         proj_predictions[is_strongest * under_threshold] = 1
 
-        # is 2 if strongest and over threshold
+        # is 2 if strongest and over threshold, noise
         proj_predictions[is_strongest * ~under_threshold] = 2
 
         # is 3 (substitute) if not strongest but better than strongest and has different coordinate than strongest
@@ -181,6 +181,9 @@ class User():
         proj_predictions[~is_strongest * ~under_threshold] = 4
         proj_predictions[~is_strongest * ~is_different] = 4
         proj_predictions[proj_range.squeeze() is None] = 4
+
+        # is 5 if last echo and not substitute
+        proj_predictions[~is_strongest * proj_predictions==4] = 5
 
         # roi
         proj_predictions[is_strongest * proj_range.squeeze() > 30] = 1
@@ -200,6 +203,11 @@ class User():
         # get the first scan in batch and project scan
         pred_np = unproj_predictions.cpu().numpy()
         pred_np = pred_np.reshape((-1)).astype(np.int32)
+        #print(pred_np.shape)
+        #print(np.count_nonzero(pred_np==5)) # 100000
+        #print(np.count_nonzero(pred_np==3)) # 1600
+        #print(np.count_nonzero(pred_np==2)) # 0
+        #print(np.count_nonzero(pred_np==1)) # 8000
 
         # map to original label
         pred_np = to_orig_fn(pred_np)
