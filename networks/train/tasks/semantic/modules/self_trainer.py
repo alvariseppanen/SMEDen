@@ -402,7 +402,12 @@ class Trainer():
             # run NNs
             p_difficulty = model(in_vol)
             p_range, knn_values = model2(in_vol, binary_mask)
-            range_error = (p_range - in_vol[:, [0], :, :]) * valid_mask
+            if not self.slide:
+                range_error = (p_range - in_vol[:, [0], :, :]) * valid_mask
+            else:
+                # for Slide: select the best hypothesis
+                range_error = (p_range - in_vol[:,None,[0],:,:]) * valid_mask[:,None,:,:,:]
+                range_error, _ = torch.min(range_error, dim=1)
             p_difficulty = p_difficulty * valid_mask
             
             knn_values, _ = torch.sort(knn_values, dim=1)
