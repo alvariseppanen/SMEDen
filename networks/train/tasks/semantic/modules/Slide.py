@@ -45,14 +45,14 @@ class RDNet(nn.Module):
         super(RDNet, self).__init__()
         self.nclasses = nclasses
 
-        self.lilaBlock1 = LiLaBlock(2, 64)
+        self.lilaBlock1 = LiLaBlock(1, 64)
         self.lilaBlock2 = LiLaBlock(64, 64)
         self.lilaBlock3 = LiLaBlock(64, 64)
         self.lilaBlock4 = LiLaBlock(64, 1)
 
     def forward(self, x):
         
-        x = (x[:, [0,4], ...].clone()) # range, intensity
+        x = (x[:, [0], ...].clone())
         x = self.lilaBlock1(x)
         x = self.lilaBlock2(x)
         x = self.lilaBlock3(x)
@@ -66,7 +66,7 @@ class PRNet(nn.Module):
         super(PRNet, self).__init__()
         self.nclasses = nclasses
 
-        self.lilaBlock1 = LiLaBlock(2, 64)
+        self.lilaBlock1 = LiLaBlock(1, 64)
         self.lilaBlock2 = LiLaBlock(64, 64)
         self.lilaBlock3 = LiLaBlock(64, 64)
         self.lilaBlock4 = LiLaBlock(64, 1)
@@ -77,7 +77,7 @@ class PRNet(nn.Module):
 
     def forward(self, x, binary_mask):
 
-        x = (x[:, [0,4], ...].clone()) # range, intensity
+        x = (x[:, [0], ...].clone())
         x = self.lilaBlock1(x * ~binary_mask)
         x = self.lilaBlock2(x)
 
