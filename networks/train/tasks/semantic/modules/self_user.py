@@ -16,6 +16,7 @@ import os
 import numpy as np
 from tasks.semantic.modules.SCorrelationL import *
 from tasks.semantic.modules.SCoordinateL import *
+from tasks.semantic.modules.Slide import *
 
 class User():
   def __init__(self, ARCH, DATA, datadir, logdir, modeldir,split):
@@ -48,10 +49,15 @@ class User():
                                       shuffle_train=False)
 
     # concatenate the encoder and the head
+    self.slide = False
     with torch.no_grad():
         torch.nn.Module.dump_patches = True
+
+        if not self.slide:
+            self.model = SCorrL(self.parser.get_n_classes(), ARCH)
+        else:
+            self.model = RDNet(self.parser.get_n_classes(), ARCH)
         
-        self.model = SCorrL(self.parser.get_n_classes(), ARCH)
         #self.model = nn.DataParallel(self.model)
         w_dict = torch.load(modeldir + "/SMEDNet_valid_best",
                             map_location=lambda storage, loc: storage)
