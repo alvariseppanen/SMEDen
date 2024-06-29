@@ -21,6 +21,7 @@ from tasks.semantic.modules.ioueval import *
 from tasks.semantic.modules.SCoordinateL import *
 from tasks.semantic.modules.SCorrelationL import *
 from tasks.semantic.modules.KNN_search import KNN_search
+from tasks.semantic.modules.Slide import *
 import random
 import sys
 
@@ -118,9 +119,14 @@ class Trainer():
                 self.loss_w[x_cl] = 0
         print("Loss weights from content: ", self.loss_w.data)
 
+        self.slide = False
         with torch.no_grad():
-            self.model = SCorrL(self.parser.get_n_classes(), self.ARCH)
-            self.model2 = SCoorL(self.parser.get_n_classes(), self.ARCH)
+            if not self.slide:
+                self.model = SCorrL(self.parser.get_n_classes(), self.ARCH)
+                self.model2 = SCoorL(self.parser.get_n_classes(), self.ARCH)
+            else: 
+                self.model = RDNet(self.parser.get_n_classes(), self.ARCH)
+                self.model2 = PRNet(self.parser.get_n_classes(), self.ARCH)
 
         self.tb_logger = Logger(self.log + "/tb") 
         self.knn_search = KNN_search()
@@ -411,10 +417,12 @@ class Trainer():
             knn_regression_var = torch.clamp(knn_regression_var, min=1, max=2) 
 
             proj_range = torch.bucketize(proj_range, torch.arange(1,80,1).cuda()) + 1
-            
-            #loss_m = ((torch.abs(range_error)/(0.2*proj_range*torch.exp(p_difficulty)) + torch.abs(knn_regression_target - p_difficulty)/knn_regression_var + p_difficulty)*binary_mask*valid_mask).sum()/torch.count_nonzero(binary_mask*valid_mask)
-            loss_m = ((torch.abs(range_error)/(0.2*proj_range*torch.exp(p_difficulty)) + p_difficulty)*binary_mask*valid_mask).sum()/torch.count_nonzero(binary_mask*valid_mask)
 
+            if not self.slide:
+                loss_m = ((torch.abs(range_error)/(0.2*proj_range*torch.exp(p_difficulty)) + torch.abs(knn_regression_target - p_difficulty)/knn_regression_var + p_difficulty)*binary_mask*valid_mask).sum()/torch.count_nonzero(binary_mask*valid_mask)
+            else:
+                loss_m = ((torch.abs(range_error)/(0.2*proj_range*torch.exp(p_difficulty)) + p_difficulty)*binary_mask*valid_mask).sum()/torch.count_nonzero(binary_mask*valid_mask)
+                
             optimizer.zero_grad()
             optimizer2.zero_grad()
             if self.n_gpus > 1:
