@@ -89,4 +89,4 @@ class PRNet(nn.Module):
         x3 = self.lilaBlock7(x)
         x3 = self.lilaBlock8(x3)
 
-        return x1, x2, x3
+        return torch.cat((x1[:,None,:,:,:], x2[:,None,:,:,:], x3[:,None,:,:,:]), dim=1)
